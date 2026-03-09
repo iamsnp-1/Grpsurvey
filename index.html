@@ -271,45 +271,61 @@
             };
 
             const fetchResults = async () => {
-                loading.value = true;
-                const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
-                const querySnapshot = await getDocs(q);
-                totalParticipants.value = querySnapshot.size;
-                
-                const tally = {};
-                querySnapshot.forEach((doc) => {
-                    const v = doc.data().voteData;
-                    Object.entries(v).forEach(([adj, friend]) => {
-                        if (!tally[adj]) tally[adj] = {};
-                        tally[adj][friend] = (tally[adj][friend] || 0) + 1;
-                    });
-                });
+                        loading.value = true;
+                        const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
+                        const querySnapshot = await getDocs(q);
+                        const userVotes = {}; 
+                        
+                        // 1. DEDUPLICATE: Only count the most recent vote per device
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            const vid = data.voterDevice; // FIXED: Changed from voterId to voterDevice
+                            if (!userVotes[vid] || data.timestamp.toDate() > userVotes[vid].ts) {
+                                userVotes[vid] = { data: data.voteData, ts: data.timestamp.toDate() };
+                            }
+                        });
 
-                const final = {};
-                Object.entries(tally).forEach(([adj, scores]) => {
-                    // Create sorted array for the tally display
-                    const sortedTally = Object.entries(scores)
-                        .map(([name, count]) => ({ name, count }))
-                        .sort((a, b) => b.count - a.count);
+                        // Extract just the valid, deduplicated vote records
+                        const validVotes = Object.values(userVotes);
 
-                    final[adj] = { 
-                        name: sortedTally[0].name, 
-                        count: sortedTally[0].count, 
-                        fullScores: scores,
-                        sortedTally: sortedTally 
+                        // 2. UPDATE TOTAL: Fixes the broken progress bars in the UI
+                        totalParticipants.value = validVotes.length; 
+                        
+                        // 3. TALLY: Loop through ONLY the validVotes, not the raw querySnapshot
+                        const tally = {};
+                        validVotes.forEach((voteRecord) => {
+                            const v = voteRecord.data;
+                            Object.entries(v).forEach(([adj, friend]) => {
+                                if (!tally[adj]) tally[adj] = {};
+                                tally[adj][friend] = (tally[adj][friend] || 0) + 1;
+                            });
+                        });
+
+                        // 4. SORT AND FINALIZE (This part of your code was already perfect!)
+                        const final = {};
+                        Object.entries(tally).forEach(([adj, scores]) => {
+                            const sortedTally = Object.entries(scores)
+                                .map(([name, count]) => ({ name, count }))
+                                .sort((a, b) => b.count - a.count);
+
+                            final[adj] = { 
+                                name: sortedTally[0].name, 
+                                count: sortedTally[0].count, 
+                                fullScores: scores,
+                                sortedTally: sortedTally 
+                            };
+                        });
+
+                        results.value = final;
+                        step.value = 'results';
+                        loading.value = false;
+
+                        nextTick(() => {
+                            Object.entries(final).forEach(([adj, data]) => {
+                                renderPieChart(adj, data.fullScores);
+                            });
+                        });
                     };
-                });
-
-                results.value = final;
-                step.value = 'results';
-                loading.value = false;
-
-                nextTick(() => {
-                    Object.entries(final).forEach(([adj, data]) => {
-                        renderPieChart(adj, data.fullScores);
-                    });
-                });
-            };
 
             const renderPieChart = (adj, scores) => {
                 const canvasId = 'canvas-' + adj.replace(/\s+/g, '-');
@@ -350,3 +366,4 @@
 
 </body>
 </html>
+
