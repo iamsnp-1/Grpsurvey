@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GROUP SURVEY | Firebase Edition</title>
+    <title>SQUAD AWARDS | Full Tally Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
         .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+        .winner-pill { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
@@ -20,26 +22,26 @@
 
     <div v-if="loading" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600 mb-4"></div>
-        <p class="text-indigo-600 font-bold animate-pulse">Syncing with Firestore...</p>
+        <p class="text-indigo-600 font-bold animate-pulse">Processing Final Counts...</p>
     </div>
 
     <div v-if="step === 'setup'" class="animate__animated animate__fadeIn">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic">New Survey Room</h1>
-            <p class="text-slate-500">Set the rules, then share the link.</p>
+            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic text-slate-800">New Award Room</h1>
+            <p class="text-slate-500 font-medium">Define your group and the categories.</p>
         </header>
 
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100">
                 <input v-model="roomName" type="text" placeholder="Room Name (e.g. Squad 2024)" 
-                       class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none mb-6">
+                       class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none mb-6 text-lg">
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase ml-2">Friends List</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Friends List</label>
                         <div class="flex gap-2 mt-1">
-                            <input v-model="tempFriend" @keyup.enter="addList('friends', 'tempFriend')" placeholder="Name..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
-                            <button @click="addList('friends', 'tempFriend')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
+                            <input v-model="tempFriend" @keyup.enter="addList('friends')" placeholder="Add name..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
+                            <button @click="addList('friends')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-3">
                             <span v-for="(f, i) in friends" :key="i" class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2 border border-indigo-100">
@@ -49,10 +51,10 @@
                     </div>
 
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase ml-2">Survey Categories</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Award Categories</label>
                         <div class="flex gap-2 mt-1">
-                            <input v-model="tempAdj" @keyup.enter="addList('adjectives', 'tempAdj')" placeholder="Adjective..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
-                            <button @click="addList('adjectives', 'tempAdj')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
+                            <input v-model="tempAdj" @keyup.enter="addList('adjectives')" placeholder="e.g. Best Driver" class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
+                            <button @click="addList('adjectives')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-3">
                             <span v-for="(a, i) in adjectives" :key="i" class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2 border border-slate-200">
@@ -64,33 +66,32 @@
             </div>
 
             <button @click="createRoom" :disabled="!isSetupValid" 
-                    class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl shadow-xl shadow-indigo-200 disabled:opacity-50 hover:scale-[1.01] transition-transform">
-                Generate Room Link 🔗
+                    class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl shadow-xl shadow-indigo-200 disabled:opacity-50">
+                Launch Live Room 🔗
             </button>
         </div>
     </div>
 
     <div v-if="step === 'voting'" class="animate__animated animate__fadeIn">
         <div class="mb-8 text-center">
-            <span class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">{{roomName}}</span>
+            <span class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{{roomName}}</span>
             <h2 class="text-3xl font-extrabold mt-4">Cast Your Votes</h2>
-            
-            <div v-if="!hasVoted" class="mt-4 bg-white p-3 rounded-2xl flex items-center gap-3 border border-indigo-50">
+            <div v-if="!hasVoted" class="mt-4 bg-white p-3 rounded-2xl flex items-center gap-3 border border-indigo-50 shadow-sm">
                 <input readonly :value="shareUrl" class="flex-1 text-xs text-slate-400 bg-transparent outline-none truncate px-2">
-                <button @click="copyLink" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl whitespace-nowrap">Copy Link</button>
+                <button @click="copyLink" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">Copy URL</button>
             </div>
         </div>
 
-        <div v-if="hasVoted" class="text-center p-12 bg-white rounded-3xl border border-slate-100 space-y-4">
-            <div class="text-5xl">🗳️</div>
-            <h3 class="text-2xl font-bold">Votes Submitted!</h3>
-            <p class="text-slate-500">You can only vote once. Check the live results below.</p>
-            <button @click="fetchResults" class="w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-bold border border-indigo-100">View Results</button>
+        <div v-if="hasVoted" class="text-center p-12 bg-white rounded-3xl border border-slate-100 space-y-4 shadow-xl">
+            <div class="text-5xl">👑</div>
+            <h3 class="text-2xl font-bold">Votes Recorded!</h3>
+            <p class="text-slate-500 text-sm">One entry per device. See how the group voted below.</p>
+            <button @click="fetchResults" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">Refresh Results</button>
         </div>
 
         <div v-else class="space-y-6">
             <div v-for="adj in adjectives" :key="adj" class="bg-white p-6 rounded-3xl border border-slate-100 card-shadow">
-                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Winner for</p>
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Who is the...</p>
                 <h3 class="text-xl font-extrabold text-slate-800 mb-4">{{adj}}</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <button v-for="name in friends" :key="name" 
@@ -103,55 +104,77 @@
             </div>
             <button @click="submitVotes" :disabled="Object.keys(votes).length < adjectives.length" 
                     class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl shadow-lg disabled:opacity-50">
-                Submit Votes 🚀
+                Lock My Votes 🚀
             </button>
         </div>
     </div>
 
-    <div v-if="step === 'results'" class="animate__animated animate__zoomIn space-y-6">
+    <div v-if="step === 'results'" class="animate__animated animate__zoomIn space-y-8 pb-20">
         <div class="text-center">
-            <h2 class="text-4xl font-black italic">{{roomName}}</h2>
-            <p class="text-slate-400 mt-1 font-bold">The Crowd Has Spoken</p>
+            <h2 class="text-4xl font-black italic text-slate-800">{{roomName}}</h2>
+            <p class="text-slate-400 mt-1 font-bold tracking-widest uppercase text-[10px]">Leaderboard & Detailed Distribution</p>
         </div>
         
-        <div class="grid gap-4">
-            <div v-for="(data, adj) in results" :key="adj" class="bg-white p-6 rounded-3xl border border-slate-100 flex justify-between items-center card-shadow">
-                <div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">{{adj}}</span>
-                    <h4 class="text-2xl font-black text-indigo-600 leading-tight">{{data.name}}</h4>
+        <div v-for="(data, adj) in results" :key="adj" class="bg-white rounded-3xl border border-slate-100 card-shadow overflow-hidden">
+            <div class="p-6 border-b border-slate-50 bg-slate-50/50">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Award For {{adj}}</span>
+                <div class="flex justify-between items-end mt-1">
+                    <h4 class="text-3xl font-black text-indigo-600 leading-tight">🏆 {{data.name}}</h4>
+                    <span class="text-indigo-600 font-black text-sm mb-1">{{data.count}} Total Votes</span>
                 </div>
-                <div class="text-right">
-                    <span class="block text-2xl font-black text-slate-800">{{data.count}}</span>
-                    <span class="text-[10px] text-slate-400 font-bold uppercase">Votes</span>
+            </div>
+            
+            <div class="p-6">
+                <p class="text-[10px] font-black text-slate-300 uppercase mb-4 tracking-widest">Full Tally Breakdown</p>
+                <div class="space-y-3">
+                    <div v-for="tally in data.sortedTally" :key="tally.name" 
+                         class="flex justify-between items-center text-sm">
+                        <span class="font-bold text-slate-600" :class="{'text-indigo-600': tally.name === data.name}">
+                            {{tally.name}}
+                        </span>
+                        <div class="flex items-center gap-3 flex-1 px-4">
+                            <div class="h-1.5 bg-slate-100 rounded-full flex-1 overflow-hidden">
+                                <div class="h-full bg-indigo-400 rounded-full" 
+                                     :style="{ width: (tally.count / totalParticipants * 100) + '%' }"></div>
+                            </div>
+                            <span class="font-black text-slate-400 w-8 text-right">{{tally.count}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 bg-slate-50/30 flex flex-col items-center">
+                <div class="max-w-[220px] w-full">
+                    <canvas :id="'canvas-' + adj.replace(/\s+/g, '-')"></canvas>
                 </div>
             </div>
         </div>
         
-        <button @click="step = 'voting'" class="w-full py-4 text-slate-400 font-bold hover:text-indigo-600 transition">Back to Room</button>
+        <button @click="step = 'voting'" class="w-full py-4 text-slate-400 font-bold hover:text-indigo-600 transition underline underline-offset-8">
+            Return to Voting Room
+        </button>
     </div>
 
 </div>
 
 <script type="module">
-    // --- FIREBASE INITIALIZATION ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
-    apiKey: "AIzaSyDmsSq0Edc0vZpRi6vYV7tEmQtNauZ9730",
-    authDomain: "survey-719eb.firebaseapp.com",
-    projectId: "survey-719eb",
-    storageBucket: "survey-719eb.firebasestorage.app",
-    messagingSenderId: "448765455299",
-    appId: "1:448765455299:web:e0a4e6af3bc5a25a29eb76",
-    measurementId: "G-9NFEE5GLN0"
+        apiKey: "AIzaSyDmsSq0Edc0vZpRi6vYV7tEmQtNauZ9730",
+        authDomain: "survey-719eb.firebaseapp.com",
+        projectId: "survey-719eb",
+        storageBucket: "survey-719eb.firebasestorage.app",
+        messagingSenderId: "448765455299",
+        appId: "1:448765455299:web:e0a4e6af3bc5a25a29eb76",
+        measurementId: "G-9NFEE5GLN0"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- VUE APPLICATION ---
-    const { createApp, ref, onMounted, computed } = Vue;
+    const { createApp, ref, onMounted, computed, nextTick } = Vue;
 
     createApp({
         setup() {
@@ -166,11 +189,11 @@
             const votes = ref({});
             const results = ref({});
             const hasVoted = ref(false);
+            const totalParticipants = ref(0);
 
             const shareUrl = computed(() => window.location.href);
             const isSetupValid = computed(() => roomName.value && friends.value.length >= 2 && adjectives.value.length >= 1);
 
-            // --- HELPER: Identify Device ---
             const getDeviceIdentity = () => {
                 const ua = navigator.userAgent;
                 let brand = "Unknown Device";
@@ -193,32 +216,34 @@
                 if (id) {
                     roomId.value = id;
                     await loadRoomData(id);
-                    if (localStorage.getItem(`voted_${id}`)) hasVoted.value = true;
+                    if (localStorage.getItem(`voted_${id}`)) {
+                        hasVoted.value = true;
+                        await fetchResults();
+                    }
                     step.value = 'voting';
                 }
                 loading.value = false;
             });
 
-            const addList = (list, temp) => {
-                if (eval(temp).value.trim()) {
-                    if (list === 'friends') friends.value.push(tempFriend.value.trim());
-                    else adjectives.value.push(tempAdj.value.trim());
-                    if (list === 'friends') tempFriend.value = '';
-                    else tempAdj.value = '';
+            const addList = (type) => {
+                if (type === 'friends' && tempFriend.value.trim()) {
+                    friends.value.push(tempFriend.value.trim());
+                    tempFriend.value = '';
+                } else if (type === 'adjectives' && tempAdj.value.trim()) {
+                    adjectives.value.push(tempAdj.value.trim());
+                    tempAdj.value = '';
                 }
             };
 
             const createRoom = async () => {
                 loading.value = true;
-                try {
-                    const docRef = await addDoc(collection(db, "rooms"), {
-                        name: roomName.value,
-                        friends: friends.value,
-                        adjectives: adjectives.value,
-                        createdAt: new Date()
-                    });
-                    window.location.search = `?roomId=${docRef.id}`;
-                } catch (e) { alert("Error creating room. Check Firebase Rules."); }
+                const docRef = await addDoc(collection(db, "rooms"), {
+                    name: roomName.value,
+                    friends: friends.value,
+                    adjectives: adjectives.value,
+                    createdAt: new Date()
+                });
+                window.location.search = `?roomId=${docRef.id}`;
             };
 
             const loadRoomData = async (id) => {
@@ -233,17 +258,15 @@
 
             const submitVotes = async () => {
                 loading.value = true;
-                try {
-                    await addDoc(collection(db, "votes"), {
-                        roomId: roomId.value,
-                        voterDevice: getDeviceIdentity(),
-                        voteData: votes.value,
-                        timestamp: new Date()
-                    });
-                    localStorage.setItem(`voted_${roomId.value}`, 'true');
-                    hasVoted.value = true;
-                    await fetchResults();
-                } catch (e) { console.error(e); }
+                await addDoc(collection(db, "votes"), {
+                    roomId: roomId.value,
+                    voterDevice: getDeviceIdentity(),
+                    voteData: votes.value,
+                    timestamp: new Date()
+                });
+                localStorage.setItem(`voted_${roomId.value}`, 'true');
+                hasVoted.value = true;
+                await fetchResults();
                 loading.value = false;
             };
 
@@ -251,6 +274,7 @@
                 loading.value = true;
                 const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
                 const querySnapshot = await getDocs(q);
+                totalParticipants.value = querySnapshot.size;
                 
                 const tally = {};
                 querySnapshot.forEach((doc) => {
@@ -263,23 +287,61 @@
 
                 const final = {};
                 Object.entries(tally).forEach(([adj, scores]) => {
-                    const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-                    final[adj] = { name: winner, count: scores[winner] };
+                    // Create sorted array for the tally display
+                    const sortedTally = Object.entries(scores)
+                        .map(([name, count]) => ({ name, count }))
+                        .sort((a, b) => b.count - a.count);
+
+                    final[adj] = { 
+                        name: sortedTally[0].name, 
+                        count: sortedTally[0].count, 
+                        fullScores: scores,
+                        sortedTally: sortedTally 
+                    };
                 });
 
                 results.value = final;
                 step.value = 'results';
                 loading.value = false;
+
+                nextTick(() => {
+                    Object.entries(final).forEach(([adj, data]) => {
+                        renderPieChart(adj, data.fullScores);
+                    });
+                });
+            };
+
+            const renderPieChart = (adj, scores) => {
+                const canvasId = 'canvas-' + adj.replace(/\s+/g, '-');
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(scores),
+                        datasets: [{
+                            data: Object.values(scores),
+                            backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'],
+                            borderWidth: 0,
+                            cutout: '70%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } }
+                    }
+                });
             };
 
             const copyLink = () => {
                 navigator.clipboard.writeText(shareUrl.value);
-                alert("Link copied! Share it with the squad.");
+                alert("Link Copied!");
             };
 
             return { 
                 step, loading, roomName, friends, adjectives, tempFriend, tempAdj, 
-                votes, results, hasVoted, shareUrl, isSetupValid,
+                votes, results, hasVoted, shareUrl, isSetupValid, totalParticipants,
                 addList, createRoom, submitVotes, fetchResults, copyLink 
             };
         }
