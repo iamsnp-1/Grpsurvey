@@ -260,7 +260,7 @@
                 loading.value = true;
                 await addDoc(collection(db, "votes"), {
                     roomId: roomId.value,
-                    voterDevice: getDeviceIdentity(),
+                    voterId: deviceId,
                     voteData: votes.value,
                     timestamp: new Date()
                 });
@@ -279,7 +279,7 @@
                         // 1. DEDUPLICATE: Only count the most recent vote per device
                         querySnapshot.forEach((doc) => {
                             const data = doc.data();
-                            const vid = data.voterDevice; // FIXED: Changed from voterId to voterDevice
+                            const vid = data.voterId; // FIXED: Changed from voterDevice to voterId
                             if (!userVotes[vid] || data.timestamp.toDate() > userVotes[vid].ts) {
                                 userVotes[vid] = { data: data.voteData, ts: data.timestamp.toDate() };
                             }
