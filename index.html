@@ -332,47 +332,66 @@
                     };
 
             const exportDataToJson = async () => {
-    loading.value = true;
-    try {
-        const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
-        const querySnapshot = await getDocs(q);
-        const allVotes = [];
-        
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            allVotes.push({
-                docId: doc.id,
-                roomId: data.roomId,
-                voterId: data.voterId,
-                voteData: data.voteData,
-                timestamp: data.timestamp.toDate().toISOString() 
-            });
-        });
+                loading.value = true;
+                try {
+                    const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
+                    const querySnapshot = await getDocs(q);
+                    const allVotes = [];
+                    
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        allVotes.push({
+                            docId: doc.id,
+                            roomId: data.roomId,
+                            voterId: data.voterId,
+                            voteData: data.voteData,
+                            timestamp: data.timestamp.toDate().toISOString() 
+                        });
+                    });
 
-        const jsonString = JSON.stringify(allVotes, null, 2);
-        
-        // Failsafe: Log it so you can copy-paste it if the download is blocked!
-        console.log("📦 YOUR FIREBASE JSON DATA:");
-        console.log(jsonString);
+                    const jsonString = JSON.stringify(allVotes, null, 2);
+                    const fileName = `Squad_Awards_Results.json`;
 
-        // Attempt download
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = `Squad_Awards_${roomId.value}_Results.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(downloadUrl);
+                    // 1. MOBILE FIX: Try to use the native Android/iOS share menu
+                    if (navigator.share) {
+                        const file = new File([jsonString], fileName, { type: 'application/json' });
+                        
+                        try {
+                            // Try to share it as an actual file
+                            await navigator.share({
+                                title: 'Squad Awards JSON',
+                                files: [file]
+                            });
+                        } catch (err) {
+                            // If the browser rejects the file, share the raw text instead
+                            await navigator.share({
+                                title: 'Squad Awards JSON',
+                                text: jsonString
+                            });
+                        }
+                    } 
+                    // 2. DESKTOP FALLBACK: Standard download link
+                    else {
+                        const blob = new Blob([jsonString], { type: "application/json" });
+                        const downloadUrl = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(downloadUrl);
+                    }
 
-    } catch (error) {
-        console.error("🔥 Error exporting data: ", error);
-        alert("Something went wrong! Check the F12 console.");
-    } finally {
-        loading.value = false;
-    }
-};
+                } catch (error) {
+                    console.error("Export error: ", error);
+                    alert("Download failed! We copied the data to your clipboard instead.");
+                    // Ultimate fallback: just copy the text so you don't lose it
+                    navigator.clipboard.writeText(JSON.stringify(allVotes, null, 2));
+                } finally {
+                    loading.value = false;
+                }
+            };
 
             const renderPieChart = (adj, scores) => {
                 const canvasId = 'canvas-' + adj.replace(/\s+/g, '-');
