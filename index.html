@@ -150,6 +150,9 @@
             </div>
         </div>
         
+        <button @click="exportDataToJson" class="mt-4 px-6 py-2 bg-slate-800 text-white font-bold rounded-xl text-sm shadow hover:bg-slate-700 transition">
+            📥 Download JSON
+        </button>
         <button @click="step = 'voting'" class="w-full py-4 text-slate-400 font-bold hover:text-indigo-600 transition underline underline-offset-8">
             Return to Voting Room
         </button>
@@ -269,6 +272,50 @@
                 await fetchResults();
                 loading.value = false;
             };
+            const exportDataToJson = async () => {
+                loading.value = true;
+                
+                try {
+                    // 1. Fetch all votes for the current room
+                    const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
+                    const querySnapshot = await getDocs(q);
+                    
+                    const allVotes = [];
+                    
+                    // 2. Loop through and format the data
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        allVotes.push({
+                            docId: doc.id, // Good to keep the Firestore document ID
+                            roomId: data.roomId,
+                            voterId: data.voterId,
+                            voteData: data.voteData,
+                            // Convert Firestore Timestamp to a standard readable string format
+                            timestamp: data.timestamp.toDate().toISOString() 
+                        });
+                    });
+            
+                    // 3. Convert the Javascript array into a cleanly formatted JSON string
+                    const jsonString = JSON.stringify(allVotes, null, 2);
+                    
+                    // 4. Trigger an automatic file download in the browser
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = downloadUrl;
+                    link.download = `Squad_Awards_${roomId.value}_Results.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(downloadUrl);
+            
+                } catch (error) {
+                    console.error("Error exporting data: ", error);
+                    alert("Failed to export JSON.");
+                } finally {
+                    loading.value = false;
+                }
+            };
 
             const fetchResults = async () => {
                         loading.value = true;
@@ -366,4 +413,5 @@
 
 </body>
 </html>
+
 
