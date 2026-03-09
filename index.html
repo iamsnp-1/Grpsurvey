@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQUAD AWARDS | Firebase Edition</title>
+    <title>GROUP SURVEY | Firebase Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -25,7 +25,7 @@
 
     <div v-if="step === 'setup'" class="animate__animated animate__fadeIn">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic">New Award Room</h1>
+            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic">New Survey Room</h1>
             <p class="text-slate-500">Set the rules, then share the link.</p>
         </header>
 
@@ -49,7 +49,7 @@
                     </div>
 
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase ml-2">Award Categories</label>
+                        <label class="text-xs font-bold text-slate-400 uppercase ml-2">Survey Categories</label>
                         <div class="flex gap-2 mt-1">
                             <input v-model="tempAdj" @keyup.enter="addList('adjectives', 'tempAdj')" placeholder="Adjective..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
                             <button @click="addList('adjectives', 'tempAdj')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
@@ -90,7 +90,7 @@
 
         <div v-else class="space-y-6">
             <div v-for="adj in adjectives" :key="adj" class="bg-white p-6 rounded-3xl border border-slate-100 card-shadow">
-                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Award for</p>
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Winner for</p>
                 <h3 class="text-xl font-extrabold text-slate-800 mb-4">{{adj}}</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <button v-for="name in friends" :key="name" 
