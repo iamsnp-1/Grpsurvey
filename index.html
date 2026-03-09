@@ -424,7 +424,8 @@
             return { 
                 step, loading, roomName, friends, adjectives, tempFriend, tempAdj, 
                 votes, results, hasVoted, shareUrl, isSetupValid, totalParticipants,
-                addList, createRoom, submitVotes, fetchResults, copyLink 
+                // Add exportDataToJson to the very end of this list! 👇
+                addList, createRoom, submitVotes, fetchResults, copyLink, exportDataToJson 
             };
         }
     }).mount('#app');
@@ -432,6 +433,7 @@
 
 </body>
 </html>
+
 
 
 
