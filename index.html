@@ -242,9 +242,10 @@
                 loading.value = true;
                 const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
                 const querySnapshot = await getDocs(q);
-                
-                const userVotes = {};
-                
+                
+                const userVotes = {}; // { voterId: { latestVoteData } }
+                
+                // Strategy: Only count the most recent vote per user (voterId)
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const vid = data.voterId;
@@ -252,36 +253,6 @@
                         userVotes[vid] = { data: data.voteData, ts: data.timestamp.toDate() };
                     }
                 });
-
-                const tally = {};
-                Object.values(userVotes).forEach(uv => {
-                    Object.entries(uv.data).forEach(([adj, friend]) => {
-                        if (!tally[adj]) tally[adj] = {};
-                        tally[adj][friend] = (tally[adj][friend] || 0) + 1;
-                    });
-                });
-
-                const final = {};
-                Object.entries(tally).forEach(([adj, scores]) => {
-                    // 1. Find the highest number of votes
-                    const maxVotes = Math.max(...Object.values(scores));
-                    
-                    // 2. Find all friends who have that highest number of votes
-                    const winners = Object.keys(scores).filter(friend => scores[friend] === maxVotes);
-                    
-                    // 3. Join them with an '&' so it reads nicely (e.g., "Alice & Bob")
-                    const winnersText = winners.join(' & ');
-                    
-                    final[adj] = { name: winnersText, count: maxVotes, fullScores: scores };
-                });
-
-                results.value = final;
-                step.value = 'results';
-                loading.value = false;
-                nextTick(() => {
-                    Object.entries(final).forEach(([adj, data]) => renderPieChart(adj, data.fullScores));
-                });
-            };
 
                 const tally = {};
                 Object.values(userVotes).forEach(uv => {
