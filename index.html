@@ -332,49 +332,47 @@
                     };
 
             const exportDataToJson = async () => {
-                loading.value = true;
-                
-                try {
-                    // 1. Fetch all votes for the current room
-                    const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
-                    const querySnapshot = await getDocs(q);
-                    
-                    const allVotes = [];
-                    
-                    // 2. Loop through and format the data
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        allVotes.push({
-                            docId: doc.id, // Good to keep the Firestore document ID
-                            roomId: data.roomId,
-                            voterId: data.voterId,
-                            voteData: data.voteData,
-                            // Convert Firestore Timestamp to a standard readable string format
-                            timestamp: data.timestamp.toDate().toISOString() 
-                        });
-                    });
+    loading.value = true;
+    try {
+        const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
+        const querySnapshot = await getDocs(q);
+        const allVotes = [];
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            allVotes.push({
+                docId: doc.id,
+                roomId: data.roomId,
+                voterId: data.voterId,
+                voteData: data.voteData,
+                timestamp: data.timestamp.toDate().toISOString() 
+            });
+        });
 
-                    // 3. Convert the Javascript array into a cleanly formatted JSON string
-                    const jsonString = JSON.stringify(allVotes, null, 2);
-                    
-                    // 4. Trigger an automatic file download in the browser
-                    const blob = new Blob([jsonString], { type: "application/json" });
-                    const downloadUrl = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = downloadUrl;
-                    link.download = `Squad_Awards_${roomId.value}_Results.json`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(downloadUrl);
+        const jsonString = JSON.stringify(allVotes, null, 2);
+        
+        // Failsafe: Log it so you can copy-paste it if the download is blocked!
+        console.log("📦 YOUR FIREBASE JSON DATA:");
+        console.log(jsonString);
 
-                } catch (error) {
-                    console.error("Error exporting data: ", error);
-                    alert("Failed to export JSON.");
-                } finally {
-                    loading.value = false;
-                }
-            };
+        // Attempt download
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `Squad_Awards_${roomId.value}_Results.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+        console.error("🔥 Error exporting data: ", error);
+        alert("Something went wrong! Check the F12 console.");
+    } finally {
+        loading.value = false;
+    }
+};
 
             const renderPieChart = (adj, scores) => {
                 const canvasId = 'canvas-' + adj.replace(/\s+/g, '-');
