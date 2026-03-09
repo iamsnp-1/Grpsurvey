@@ -170,6 +170,23 @@
             const shareUrl = computed(() => window.location.href);
             const isSetupValid = computed(() => roomName.value && friends.value.length >= 2 && adjectives.value.length >= 1);
 
+            // --- HELPER: Identify Device ---
+            const getDeviceIdentity = () => {
+                const ua = navigator.userAgent;
+                let brand = "Unknown Device";
+                if (/iPhone/.test(ua)) brand = "iPhone";
+                else if (/Android/.test(ua)) brand = "Android";
+                else if (/Windows/.test(ua)) brand = "Windows PC";
+                else if (/Macintosh/.test(ua)) brand = "MacBook";
+                
+                let id = localStorage.getItem('device_id');
+                if (!id) {
+                    id = Math.random().toString(36).substring(2, 7);
+                    localStorage.setItem('device_id', id);
+                }
+                return `${brand} (${id})`;
+            };
+
             onMounted(async () => {
                 const params = new URLSearchParams(window.location.search);
                 const id = params.get('roomId');
