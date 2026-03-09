@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQUAD AWARDS | Final Votes Only</title>
+    <title>SQUAD AWARDS | Edit Once Enabled</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,7 +12,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.01), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
@@ -21,51 +21,48 @@
 
     <div v-if="loading" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600 mb-4"></div>
-        <p class="text-indigo-600 font-bold animate-pulse">Syncing Database...</p>
+        <p class="text-indigo-600 font-bold">Updating Records...</p>
     </div>
 
     <div v-if="step === 'setup'" class="animate__animated animate__fadeIn">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic">New Award Room</h1>
-            <p class="text-slate-500">Votes are final once submitted.</p>
+            <h1 class="text-4xl font-extrabold tracking-tight mb-2 italic">Award Room</h1>
+            <p class="text-slate-500">Each device gets 1 original vote + 1 update.</p>
         </header>
 
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100">
-                <input v-model="roomName" type="text" placeholder="Room Name" 
-                       class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none mb-6">
+                <input v-model="roomName" type="text" placeholder="Room Name" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none mb-6">
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Friends List</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Friends</label>
                         <div class="flex gap-2 mt-1">
                             <input v-model="tempFriend" @keyup.enter="addList('friends')" placeholder="Name..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
                             <button @click="addList('friends')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-3">
                             <span v-for="(f, i) in friends" :key="i" class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2">
-                                {{f}} <button @click="friends.splice(i, 1)" class="hover:text-red-500 text-lg">×</button>
+                                {{f}} <button @click="friends.splice(i, 1)">×</button>
                             </span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Categories</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Awards</label>
                         <div class="flex gap-2 mt-1">
-                            <input v-model="tempAdj" @keyup.enter="addList('adjectives')" placeholder="e.g. Funniest" class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
+                            <input v-model="tempAdj" @keyup.enter="addList('adjectives')" placeholder="Award..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none ring-1 ring-slate-100">
                             <button @click="addList('adjectives')" class="px-5 btn-primary text-white rounded-xl font-bold">+</button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-3">
                             <span v-for="(a, i) in adjectives" :key="i" class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2">
-                                {{a}} <button @click="adjectives.splice(i, 1)" class="hover:text-red-500 text-lg">×</button>
+                                {{a}} <button @click="adjectives.splice(i, 1)">×</button>
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
-            <button @click="createRoom" :disabled="!isSetupValid" class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl shadow-xl">
-                Create Room 🚀
-            </button>
+            <button @click="createRoom" :disabled="!isSetupValid" class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl">Create Room 🔗</button>
         </div>
     </div>
 
@@ -75,16 +72,26 @@
             <h2 class="text-3xl font-extrabold mt-4">Cast Your Votes</h2>
         </div>
 
-        <div v-if="hasVoted" class="text-center p-12 bg-white rounded-3xl border border-slate-100 space-y-6 shadow-xl">
-            <div class="text-5xl">🔒</div>
-            <h3 class="text-2xl font-bold">Votes Locked In</h3>
-            <p class="text-slate-500">You have already submitted your response for this room. Your device is recorded.</p>
-            <button @click="fetchResults" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">View Results</button>
+        <div v-if="hasVoted && !isEditing" class="text-center p-12 bg-white rounded-3xl border border-slate-100 space-y-6 shadow-xl">
+            <div class="text-5xl">✅</div>
+            <h3 class="text-2xl font-bold">Submission Confirmed</h3>
+            
+            <div v-if="canUpdate" class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <p class="text-amber-800 text-sm font-bold">Change of heart?</p>
+                <p class="text-amber-600 text-xs mb-3">You have **one update remaining**.</p>
+                <button @click="startUpdate" class="w-full py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition shadow-md">
+                    Update Choices
+                </button>
+            </div>
+            <div v-else class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Votes are Locked</p>
+            </div>
+
+            <button @click="fetchResults" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">See Leaderboard</button>
         </div>
 
         <div v-else class="space-y-6">
             <div v-for="adj in adjectives" :key="adj" class="bg-white p-6 rounded-3xl border border-slate-100 card-shadow">
-                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Who is the...</p>
                 <h3 class="text-xl font-extrabold text-slate-800 mb-4">{{adj}}</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <button v-for="name in friends" :key="name" 
@@ -97,43 +104,31 @@
             </div>
             <button @click="submitVotes" :disabled="Object.keys(votes).length < adjectives.length" 
                     class="w-full py-5 btn-primary text-white rounded-3xl font-extrabold text-xl shadow-lg disabled:opacity-50">
-                Submit & Lock Votes 🚀
+                {{ isEditing ? 'Update My Votes' : 'Submit Votes' }} 🚀
             </button>
         </div>
     </div>
 
     <div v-if="step === 'results'" class="animate__animated animate__zoomIn space-y-8 pb-20">
-        <div class="text-center">
-            <h2 class="text-4xl font-black italic text-slate-800">{{roomName}}</h2>
-            <p class="text-slate-400 mt-1 font-bold tracking-widest uppercase text-[10px]">Leaderboard & Vote Distribution</p>
-        </div>
-        
-        <div v-for="(data, adj) in results" :key="adj" class="bg-white rounded-3xl border border-slate-100 card-shadow overflow-hidden">
-            <div class="p-6 bg-slate-50/50 flex justify-between items-center">
-                <div>
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">{{adj}}</span>
-                    <h4 class="text-2xl font-black text-indigo-600">🏆 {{data.name}}</h4>
-                </div>
-                <span class="text-indigo-600 font-black text-sm">{{data.count}} Votes</span>
+        <div class="text-center"><h2 class="text-3xl font-black italic">{{roomName}}</h2></div>
+        <div v-for="(data, adj) in results" :key="adj" class="bg-white p-6 rounded-3xl border border-slate-100 card-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <span class="font-bold text-indigo-600">{{adj}}</span>
+                <span class="text-xs font-black bg-slate-100 px-3 py-1 rounded-full">{{data.count}} Votes</span>
             </div>
-            
-            <div class="p-8 flex flex-col items-center">
-                <div class="max-w-[200px] w-full">
-                    <canvas :id="'canvas-' + adj.replace(/\s+/g, '-')"></canvas>
-                </div>
+            <h4 class="text-2xl font-black mb-4">🏆 {{data.name}}</h4>
+            <div class="max-w-[180px] mx-auto">
+                <canvas :id="'canvas-' + adj.replace(/\s+/g, '-')"></canvas>
             </div>
         </div>
-        
-        <button @click="step = 'voting'" class="w-full py-4 text-slate-400 font-bold hover:text-indigo-600 transition underline">
-            Return to Room
-        </button>
+        <button @click="step = 'voting'; isEditing = false" class="w-full text-slate-400 font-bold underline">Back</button>
     </div>
 
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmsSq0Edc0vZpRi6vYV7tEmQtNauZ9730",
@@ -162,25 +157,21 @@
             const tempAdj = ref('');
             const votes = ref({});
             const results = ref({});
+            
             const hasVoted = ref(false);
+            const canUpdate = ref(false);
+            const isEditing = ref(false);
 
             const shareUrl = computed(() => window.location.href);
             const isSetupValid = computed(() => roomName.value && friends.value.length >= 2 && adjectives.value.length >= 1);
 
             const getDeviceIdentity = () => {
-                const ua = navigator.userAgent;
-                let brand = "Device";
-                if (/iPhone/.test(ua)) brand = "iPhone";
-                else if (/Android/.test(ua)) brand = "Android";
-                else if (/Windows/.test(ua)) brand = "PC";
-                else if (/Macintosh/.test(ua)) brand = "Mac";
-                
                 let id = localStorage.getItem('device_id');
                 if (!id) {
                     id = Math.random().toString(36).substring(2, 7);
                     localStorage.setItem('device_id', id);
                 }
-                return `${brand} (${id})`;
+                return id;
             };
 
             onMounted(async () => {
@@ -189,8 +180,15 @@
                 if (id) {
                     roomId.value = id;
                     await loadRoomData(id);
-                    if (localStorage.getItem(`voted_${id}`)) {
+                    
+                    // Check local states
+                    const voteState = localStorage.getItem(`state_${id}`);
+                    if (voteState === 'voted') {
                         hasVoted.value = true;
+                        canUpdate.value = true;
+                    } else if (voteState === 'final') {
+                        hasVoted.value = true;
+                        canUpdate.value = false;
                         await fetchResults();
                     }
                     step.value = 'voting';
@@ -198,19 +196,45 @@
                 loading.value = false;
             });
 
+            const startUpdate = () => {
+                isEditing.value = true;
+                window.scrollTo(0,0);
+            };
+
             const submitVotes = async () => {
                 loading.value = true;
+                const deviceId = getDeviceIdentity();
+                
                 try {
-                    await addDoc(collection(db, "votes"), {
-                        roomId: roomId.value,
-                        voterId: getDeviceIdentity(),
-                        voteData: votes.value,
-                        timestamp: new Date()
-                    });
-                    localStorage.setItem(`voted_${roomId.value}`, 'true');
-                    hasVoted.value = true;
+                    if (isEditing.value) {
+                        // Logic for the one-time update
+                        // 1. Find the previous vote in Firestore and mark it inactive OR update it.
+                        // For simplicity, we add a new document with an 'isUpdate' flag
+                        await addDoc(collection(db, "votes"), {
+                            roomId: roomId.value,
+                            voterId: deviceId,
+                            voteData: votes.value,
+                            isUpdate: true,
+                            timestamp: new Date()
+                        });
+                        localStorage.setItem(`state_${roomId.value}`, 'final');
+                        canUpdate.value = false;
+                        isEditing.value = false;
+                    } else {
+                        // Logic for first-time vote
+                        await addDoc(collection(db, "votes"), {
+                            roomId: roomId.value,
+                            voterId: deviceId,
+                            voteData: votes.value,
+                            isUpdate: false,
+                            timestamp: new Date()
+                        });
+                        localStorage.setItem(`state_${roomId.value}`, 'voted');
+                        canUpdate.value = true;
+                        hasVoted.value = true;
+                    }
                     await fetchResults();
-                } catch (e) { alert("Error submitting votes."); }
+                } catch (e) { console.error(e); }
                 loading.value = false;
             };
 
@@ -219,10 +243,20 @@
                 const q = query(collection(db, "votes"), where("roomId", "==", roomId.value));
                 const querySnapshot = await getDocs(q);
                 
-                const tally = {};
+                const userVotes = {}; // { voterId: { latestVoteData } }
+                
+                // Strategy: Only count the most recent vote per user (voterId)
                 querySnapshot.forEach((doc) => {
-                    const data = doc.data().voteData;
-                    Object.entries(data).forEach(([adj, friend]) => {
+                    const data = doc.data();
+                    const vid = data.voterId;
+                    if (!userVotes[vid] || data.timestamp.toDate() > userVotes[vid].ts) {
+                        userVotes[vid] = { data: data.voteData, ts: data.timestamp.toDate() };
+                    }
+                });
+
+                const tally = {};
+                Object.values(userVotes).forEach(uv => {
+                    Object.entries(uv.data).forEach(([adj, friend]) => {
                         if (!tally[adj]) tally[adj] = {};
                         tally[adj][friend] = (tally[adj][friend] || 0) + 1;
                     });
@@ -230,8 +264,8 @@
 
                 const final = {};
                 Object.entries(tally).forEach(([adj, scores]) => {
-                    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-                    final[adj] = { name: sorted[0][0], count: sorted[0][1], fullScores: scores };
+                    const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                    final[adj] = { name: winner, count: scores[winner], fullScores: scores };
                 });
 
                 results.value = final;
@@ -249,12 +283,7 @@
                     type: 'doughnut',
                     data: {
                         labels: Object.keys(scores),
-                        datasets: [{ 
-                            data: Object.values(scores), 
-                            backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981'],
-                            borderWidth: 0,
-                            cutout: '70%'
-                        }]
+                        datasets: [{ data: Object.values(scores), backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981'] }]
                     },
                     options: { plugins: { legend: { display: false } } }
                 });
@@ -281,7 +310,7 @@
 
             const copyLink = () => { navigator.clipboard.writeText(shareUrl.value); alert("Link Copied!"); };
 
-            return { step, loading, roomName, friends, adjectives, tempFriend, tempAdj, votes, results, hasVoted, shareUrl, isSetupValid, addList, createRoom, submitVotes, fetchResults, copyLink };
+            return { step, loading, roomName, friends, adjectives, tempFriend, tempAdj, votes, results, hasVoted, canUpdate, isEditing, shareUrl, isSetupValid, addList, createRoom, submitVotes, fetchResults, copyLink, startUpdate };
         }
     }).mount('#app');
 </script>
