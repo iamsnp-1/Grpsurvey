@@ -236,6 +236,7 @@
                 try {
                     await addDoc(collection(db, "votes"), {
                         roomId: roomId.value,
+                        voterDevice: getDeviceIdentity(),
                         voteData: votes.value,
                         timestamp: new Date()
                     });
